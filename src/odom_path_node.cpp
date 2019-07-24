@@ -6,18 +6,22 @@
 visualization_msgs::Marker line_strip_odom;
 visualization_msgs::Marker line_strip_odom_combined;
 visualization_msgs::Marker line_strip_vio;
+visualization_msgs::Marker line_strip_odom_combined_xsens;
 
 ros::Publisher marker_pub_odom;
 ros::Publisher marker_pub_odom_combined;
 ros::Publisher marker_pub_vio;
+ros::Publisher marker_pub_odom_combined_xsens;
 
 geometry_msgs::Point odom_now;
 geometry_msgs::Point odom_combined_now;
 geometry_msgs::Point vio_now;
+geometry_msgs::Point odom_combined_xsens_now;
 
 int count1 = 0;
 int count2 = 0;
 int count3 = 0;
+int count4 = 0;
 
 void odomCallback1(const nav_msgs::Odometry msg)
 {
@@ -80,6 +84,26 @@ void odomCallback3(const nav_msgs::Odometry msg)
   br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/odom_path_frame", "/vio"));
 }
 
+void odomCallback4(const nav_msgs::Odometry msg)
+{
+  count4++;
+
+  if(count4%6 == 0)
+  {
+    odom_combined_xsens_now.x =  msg.pose.pose.position.x;
+    odom_combined_xsens_now.y =  msg.pose.pose.position.y;
+    odom_combined_xsens_now.z =  msg.pose.pose.position.z;
+    line_strip_odom_combined_xsens.points.push_back(odom_combined_xsens_now);
+    marker_pub_odom_combined_xsens.publish(line_strip_odom_combined_xsens);
+  }
+
+  static tf::TransformBroadcaster br;
+  tf::Transform transform;
+  transform.setOrigin( tf::Vector3(odom_combined_xsens_now.x, odom_combined_xsens_now.y, odom_combined_xsens_now.z));
+  transform.setRotation(tf::Quaternion(msg.pose.pose.orientation.x,msg.pose.pose.orientation.y,msg.pose.pose.orientation.z,msg.pose.pose.orientation.w));
+  br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), "/odom_path_frame", "/encoder_imu_xsens"));
+}
+
 int main(int argc, char **argv)
 {
 
@@ -92,10 +116,12 @@ int main(int argc, char **argv)
   ros::Subscriber sub = n.subscribe("/odom", 1000, odomCallback1);
   ros::Subscriber sub1 = n.subscribe("/odom_combined", 1000, odomCallback2);
   ros::Subscriber sub2 = n.subscribe("/t265/odom/sample", 1000, odomCallback3);
+  ros::Subscriber sub3 = n.subscribe("/odom_combined_xsens", 1000, odomCallback4);
 
   marker_pub_odom = n.advertise<visualization_msgs::Marker>("/odom_marker",1);
   marker_pub_odom_combined = n.advertise<visualization_msgs::Marker>("/odom_combined_marker",1);
   marker_pub_vio = n.advertise<visualization_msgs::Marker>("/vio_marker",1);
+  marker_pub_odom_combined_xsens = n.advertise<visualization_msgs::Marker>("/odom_combined_xsens_marker",1);
 
   line_strip_odom.header.frame_id = "/odom_path_frame";
   line_strip_odom.ns = "linestrip";
@@ -127,6 +153,16 @@ int main(int argc, char **argv)
   line_strip_vio.color.b = 1.0;
   line_strip_vio.color.a = 1.0;
 
+  line_strip_odom_combined_xsens.header.frame_id = "/odom_path_frame";
+  line_strip_odom_combined_xsens.ns = "linestrip";
+  line_strip_odom_combined_xsens.action = visualization_msgs::Marker::ADD;
+  line_strip_odom_combined_xsens.pose.orientation.w = 1.0;
+  line_strip_odom_combined_xsens.id = 4;
+  line_strip_odom_combined_xsens.type = visualization_msgs::Marker::LINE_STRIP;
+  line_strip_odom_combined_xsens.scale.x = 0.2;
+  line_strip_odom_combined_xsens.color.r = 1.0;
+  line_strip_odom_combined_xsens.color.b = 1.0;
+  line_strip_odom_combined_xsens.color.a = 1.0;
 
   ros::spin();
 
