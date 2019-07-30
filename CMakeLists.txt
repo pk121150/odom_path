@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   visualization_msgs
   tf
+  tf_conversions
 )
 
 ## System dependencies are found with CMake's conventions
@@ -201,3 +202,11 @@ include_directories(
 
 add_executable(odom_path_node src/odom_path_node.cpp)
 target_link_libraries(odom_path_node ${catkin_LIBRARIES})
+add_executable(odom_path_map_node src/odom_path_map_node.cpp)
+target_link_libraries(odom_path_map_node ${catkin_LIBRARIES})
+
+find_package(Eigen3 REQUIRED)
+include_directories(${EIGEN3_INCLUDE_DIRS})
+
+
+
